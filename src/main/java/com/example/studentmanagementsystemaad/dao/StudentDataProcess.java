@@ -1,4 +1,4 @@
-package com.example.studentmanagementsystemaad.dao.impl;
+package com.example.studentmanagementsystemaad.dao;
 
 import com.example.studentmanagementsystemaad.dao.StudentData;
 import com.example.studentmanagementsystemaad.dto.StudentDTO;
@@ -6,7 +6,7 @@ import com.example.studentmanagementsystemaad.dto.StudentDTO;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class StudentDataProcess implements StudentData {
+public final class StudentDataProcess implements StudentData {
 
     static String SAVE_STUDENT = "INSERT INTO students (id, name, email, city, level) VALUES(?,?,?,?,?)";
     static String GET_STUDENT = "SELECT * FROM students WHERE id=?";

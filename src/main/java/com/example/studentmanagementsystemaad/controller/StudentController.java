@@ -1,6 +1,6 @@
 package com.example.studentmanagementsystemaad.controller;
 
-import com.example.studentmanagementsystemaad.dao.impl.StudentDataProcess;
+import com.example.studentmanagementsystemaad.dao.StudentDataProcess;
 import com.example.studentmanagementsystemaad.dto.StudentDTO;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
@@ -22,7 +22,6 @@ public class StudentController extends HttpServlet {
 
     Connection connection;
 
-    static String SAVE_STUDENT = "INSERT INTO students (id, name, email, city, level) VALUES(?,?,?,?,?)";
     static String GET_STUDENT = "SELECT * FROM students WHERE id=?";
     static String UPDATE_STUDENT = "UPDATE students SET name = ?, city = ?, email = ?, level = ? WHERE id = ?";
     static String DELETE_STUDENT = "DELETE FROM students WHERE id=?";
