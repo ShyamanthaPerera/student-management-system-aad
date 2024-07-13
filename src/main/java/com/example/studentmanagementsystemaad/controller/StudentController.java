@@ -1,8 +1,10 @@
 package com.example.studentmanagementsystemaad.controller;
 
+import com.example.studentmanagementsystemaad.dao.impl.StudentDataProcess;
 import com.example.studentmanagementsystemaad.dto.StudentDTO;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -74,26 +76,22 @@ public class StudentController extends HttpServlet {
         }
 
         /*----Jsonb----*/
-        String id = UUID.randomUUID().toString();
-        Jsonb jsonb = JsonbBuilder.create();
-        StudentDTO studentDTO = jsonb.fromJson(req.getReader(), StudentDTO.class);
-        studentDTO.setId(id);
-        System.out.println(studentDTO);
-
-        try {
-            var ps = connection.prepareStatement(SAVE_STUDENT);
-            ps.setString(1, studentDTO.getId());
-            ps.setString(2, studentDTO.getName());
-            ps.setString(3, studentDTO.getEmail());
-            ps.setString(4, studentDTO.getCity());
-            ps.setString(5, studentDTO.getLevel());
-            if(ps.executeUpdate() != 0 ){
-                resp.getWriter().write("Student Saved");
-            } else {
-                resp.getWriter().write("Student Not Saved");
+        try (var writer = resp.getWriter()){
+            String id = UUID.randomUUID().toString();
+            Jsonb jsonb = JsonbBuilder.create();
+            StudentDTO studentDTO = jsonb.fromJson(req.getReader(), StudentDTO.class);
+            studentDTO.setId(id);
+            StudentDataProcess studentDataProcess = new StudentDataProcess();
+            if (studentDataProcess.saveStudent(studentDTO, connection)){
+                writer.write("Student Saved Successful");
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+            }else {
+                writer.write("Student Saved Failed");
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (JsonbException e){
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            throw new RuntimeException(e);
         }
     }
 
