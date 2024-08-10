@@ -15,7 +15,22 @@ public final class StudentDataProcess implements StudentData {
 
     @Override
     public StudentDTO getStudent(String studentId, Connection connection) throws SQLException {
-        return null;
+        var studentDTO = new StudentDTO();
+        try {
+            var ps = connection.prepareStatement(GET_STUDENT);
+            ps.setString(1, studentId);
+            var resultSet = ps.executeQuery();
+            while (resultSet.next()) {
+                studentDTO.setId(resultSet.getString("id"));
+                studentDTO.setName(resultSet.getString("name"));
+                studentDTO.setCity(resultSet.getString("city"));
+                studentDTO.setEmail(resultSet.getString("email"));
+                studentDTO.setLevel(resultSet.getString("level"));
+            }
+        }catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return studentDTO;
     }
 
     @Override
@@ -37,11 +52,27 @@ public final class StudentDataProcess implements StudentData {
 
     @Override
     public boolean deleteStudent(String studentId, Connection connection) {
-        return false;
+        try {
+            var ps = connection.prepareStatement(DELETE_STUDENT);
+            ps.setString(1, studentId);
+            return ps.executeUpdate() != 0;
+        }catch (SQLException e){
+            throw new RuntimeException();
+        }
     }
 
     @Override
-    public boolean updateStudent(String studentId, StudentDTO student, Connection connection) {
-        return false;
+    public boolean updateStudent(String studentId, StudentDTO updatedStudent, Connection connection) {
+        try {
+            var ps = connection.prepareStatement(UPDATE_STUDENT);
+            ps.setString(1, updatedStudent.getName());
+            ps.setString(2, updatedStudent.getCity());
+            ps.setString(3, updatedStudent.getEmail());
+            ps.setString(4, updatedStudent.getLevel());
+            ps.setString(5, studentId);
+            return ps.executeUpdate() != 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

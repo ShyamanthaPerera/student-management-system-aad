@@ -2,9 +2,9 @@ package com.example.studentmanagementsystemaad.controller;
 
 import com.example.studentmanagementsystemaad.dao.StudentDataProcess;
 import com.example.studentmanagementsystemaad.dto.StudentDTO;
+import jakarta.json.JsonException;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -22,10 +22,6 @@ public class StudentController extends HttpServlet {
 
     Connection connection;
 
-    static String GET_STUDENT = "SELECT * FROM students WHERE id=?";
-    static String UPDATE_STUDENT = "UPDATE students SET name = ?, city = ?, email = ?, level = ? WHERE id = ?";
-    static String DELETE_STUDENT = "DELETE FROM students WHERE id=?";
-
     @Override
     public void init() throws ServletException {
         try {
@@ -41,54 +37,47 @@ public class StudentController extends HttpServlet {
         }
     }
 
+    public static String generateId(){
+        return UUID.randomUUID().toString();
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        var studentDTO = new StudentDTO();
         var studentId = req.getParameter("id");
-
+        var dataProcess = new StudentDataProcess();
         try (var writer = resp.getWriter()){
-            var ps = connection.prepareStatement(GET_STUDENT);
-            ps.setString(1, studentId);
-            var resultSet = ps.executeQuery();
-            while (resultSet.next()){
-                studentDTO.setId(resultSet.getString("id"));
-                studentDTO.setName(resultSet.getString("name"));
-                studentDTO.setCity(resultSet.getString("city"));
-                studentDTO.setEmail(resultSet.getString("email"));
-                studentDTO.setLevel(resultSet.getString("level"));
-            }
-            System.out.println(studentDTO);
+            var student = dataProcess.getStudent(studentId, connection);
+            System.out.println(student);
             resp.setContentType("application/json");
             var jsonb = JsonbBuilder.create();
-            jsonb.toJson(studentDTO,writer);
-
+            jsonb.toJson(student,writer);
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        if (!req.getContentType().toLowerCase().startsWith("application/json")||req.getContentType() == null){
+        if(!req.getContentType().toLowerCase().startsWith("application/json")|| req.getContentType() == null){
             //send error
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
-
-        /*----Jsonb----*/
+        // Persist Data
         try (var writer = resp.getWriter()){
-            String id = UUID.randomUUID().toString();
             Jsonb jsonb = JsonbBuilder.create();
             StudentDTO studentDTO = jsonb.fromJson(req.getReader(), StudentDTO.class);
-            studentDTO.setId(id);
-            StudentDataProcess studentDataProcess = new StudentDataProcess();
-            if (studentDataProcess.saveStudent(studentDTO, connection)){
-                writer.write("Student Saved Successful");
+            studentDTO.setId(generateId());
+            var saveData = new StudentDataProcess();
+            if (saveData.saveStudent(studentDTO, connection)){
+                writer.write("Student saved successfully");
                 resp.setStatus(HttpServletResponse.SC_CREATED);
             }else {
-                writer.write("Student Saved Failed");
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                writer.write("Save student failed");
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+
             }
-        } catch (JsonbException e){
+
+        } catch (JsonException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             throw new RuntimeException(e);
         }
@@ -101,22 +90,17 @@ public class StudentController extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
         try (var writer = resp.getWriter()){
-            var ps = this.connection.prepareStatement(UPDATE_STUDENT);
             var studentID = req.getParameter("id");
             Jsonb jsonb = JsonbBuilder.create();
+            var studentDataProcess = new StudentDataProcess();
             var updatedStudent = jsonb.fromJson(req.getReader(), StudentDTO.class);
-            ps.setString(1, updatedStudent.getName());
-            ps.setString(2, updatedStudent.getCity());
-            ps.setString(3, updatedStudent.getEmail());
-            ps.setString(4, updatedStudent.getLevel());
-            ps.setString(5, studentID);
-            if(ps.executeUpdate() != 0){
-                System.out.println("Updated");
+            if(studentDataProcess.updateStudent(studentID,updatedStudent,connection)){
                 resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }else {
                 writer.write("Update Failed");
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
-        } catch (SQLException e) {
+        } catch (JsonException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             e.printStackTrace();
         }
@@ -127,15 +111,14 @@ public class StudentController extends HttpServlet {
 
         var stuId = req.getParameter("id");
         try (var writer = resp.getWriter()){
-            var ps = this.connection.prepareStatement(DELETE_STUDENT);
-            ps.setString(1, stuId);
-            if(ps.executeUpdate() != 0){
-                System.out.println("Deleted");
+            var studentDataProcess = new StudentDataProcess();
+            if(studentDataProcess.deleteStudent(stuId, connection)){
                 resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }else {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
                 writer.write("Delete Failed");
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             throw new RuntimeException(e);
         }
