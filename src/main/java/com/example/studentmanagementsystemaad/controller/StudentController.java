@@ -42,7 +42,7 @@ public class StudentController extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         var studentId = req.getParameter("id");
         var dataProcess = new StudentDataProcess();
         try (var writer = resp.getWriter()){
@@ -50,14 +50,14 @@ public class StudentController extends HttpServlet {
             System.out.println(student);
             resp.setContentType("application/json");
             var jsonb = JsonbBuilder.create();
-            jsonb.toJson(student,writer);
+            jsonb.toJson(student,writer); // (Serialization) Json Unbind - DTO (Java Object) convert to a json object
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         if(!req.getContentType().toLowerCase().startsWith("application/json")|| req.getContentType() == null){
             //send error
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -65,7 +65,7 @@ public class StudentController extends HttpServlet {
         // Persist Data
         try (var writer = resp.getWriter()){
             Jsonb jsonb = JsonbBuilder.create();
-            StudentDTO studentDTO = jsonb.fromJson(req.getReader(), StudentDTO.class);
+            StudentDTO studentDTO = jsonb.fromJson(req.getReader(), StudentDTO.class); // (Deserialization) Json Bind - json object convert to a DTO (Java Object)
             studentDTO.setId(generateId());
             var saveData = new StudentDataProcess();
             if (saveData.saveStudent(studentDTO, connection)){
@@ -84,7 +84,7 @@ public class StudentController extends HttpServlet {
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
         if(!req.getContentType().toLowerCase().startsWith("application/json")|| req.getContentType() == null){
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -107,7 +107,7 @@ public class StudentController extends HttpServlet {
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
         var stuId = req.getParameter("id");
         try (var writer = resp.getWriter()){
